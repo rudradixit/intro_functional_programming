@@ -246,3 +246,185 @@ def identity2 = λx.((apply identity) x)
 identity
 ```
 
+##### Selecting the first of two arguments
+
+Consider:
+
+```
+def select_first = λfirst.λsecond.first
+```
+
+The bound variable is `first` and the body is `λsecond.first`. Through replacement and reduction when applying identity and apply:
+
+```
+((select_first identity) apply) == ((λfirst.λsecond.first identity) apply) =>
+(λsecond.identity apply) =>
+apply
+```
+
+This function always returns the first argument.
+
+##### Selecting the second of two arguments
+
+Consider:
+
+```
+def select_second = λfirst.λsecond.second
+```
+
+The bound variable is `first` and the body is `λsecond.second`. Through replacement and reduction when applying identity and apply:
+
+```
+((select_second identity) apply) == ((λfirst.λsecond.second identity) apply) =>
+(λsecond.second apply) =>
+apply
+```
+
+This function always returns the second argument. In fact, `select_second` applied to anything returns a version of identity.
+
+```
+(select_second <arg>) == (λfirst.λsecond.second identity) =>
+λsecond.second
+
+... replacing second with x ...
+
+λx.x
+```
+
+##### Making pairs from two arguments
+
+Consider:
+
+```
+def make_pair = λfirst.λsecond.λfunc.((func first) second)
+```
+
+The bound variable is `first` and the body is `λsecond.λfunc.((func first) second)`. Example:
+
+```
+((make_pair identity) apply) == ((λfirst.λsecond.λfunc.((func first) second) identity) apply) =>
+(λsecond.λfunc.((func identity) second) apply) =>
+λfunc.((func identity) apply)
+```
+
+If the above result is applied to `select_first`:
+
+```
+(λfunc.((func identity) apply) select_first) == ((select_first identity) apply) ==
+((λfirst.λsecond.first identity) apply) =>
+(λsecond.identity apply) =>
+identity
+```
+
+In the case when the result is applied to `select_second`:
+
+```
+(λfunc.((func identity) apply) select_second) == ((select_second identity) apply) ==
+((λfirst.λsecond.second identity) apply) =>
+(λsecond.second apply) =>
+apply
+```
+
+#### Free and bound variables
+
+If the bound variables in functions are distinct from one another, then the substitution is straightforward. Consider this:
+
+```
+(λf.(f λx.x) λs.(s s))
+```
+
+There are 3 functions. The first one has bound variable `f`, the second has bound variable `x` and the third has bound variable `s`. So:
+
+```
+(λf.(f λx.x) λs.(s s)) =>
+λs.(s s) λx.x =>
+λx.x λx.x =>
+λx.x
+```
+
+If the bound variables in different functions were the same, the results would still be the same. So:
+
+```
+(λf.(f λf.f) λs.(s s)) =>
+λs.(s s) λf.f =>
+λf.f λf.f =>
+λf.f
+```
+
+For an arbitrary function:
+
+```
+λ<name>.<body>
+```
+
+the bound variable `<name>` may correspond to occurrences of `<name>` in `<body>` and nowhere else. A variable is said to be bound in the body of a function for which it is a bound variable, provided no other functions within the body introduce the same bound variable. Otherwise, it is said to be free.
+
+In `λx.x`, `x` is bound but in `x`, `x` is free. In `λf.(f λx.x)` `f` is bound, but in the expression `(f λx.x)`, `f` is free.
+
+Consider:
+
+```
+λf.(f λf.f)
+```
+
+The body of the function is `(f λf.f)`. The first `f` is free while the second `f` is bound and so is distinct from the first `f`.
+
+So, a variable is bound in an expression if:
+
+(1) The expression is an application:
+
+```
+(<func> <arg>)
+```
+
+and the variable is bound in `<func>` or `<arg>`. Example: the variable `convict` is bound in`(λconvict.convict fugitive)`  and in `(λprison.prison λconvict.convict)`.
+
+(2) The expression is a function:
+
+```
+λ<name>.<body>
+```
+
+Either the variable name is `<name>` or it is bound in `<body>`. Example: `prisoner` is bound in `λprisoner.(number6 prisoner)` and in `λprison.λprisoner.(prison prisoner)`.
+
+A free variable is:
+
+(1) the expression is a single name:
+
+```
+<name>
+```
+
+and the variable's name is `<name>`.
+
+(2) The expression is an application:
+
+```
+(<function> <argument>)
+```
+
+and the variable is free in `<function>` or in `<argument>`. Example: `escaper` is free in `(λprisoner.prisoner escaper)` and in `(escaper λjailor.jailor)`
+
+(3) The expression is a function:
+
+```
+λ<name>.<body>
+```
+
+and the variable's name is not `<name>` . Example: `fugitive` is free in `λprison.(prison fugitive)` and in `λshort.λsharp.λshock.fugitive`.
+
+With the above, it is possible to re-define β reduction: for the normal order of β reduction of an application:
+
+```
+λ<name>.<body> <arg>
+```
+
+we replace all free occurrences of `<name>` in `<body>` with `<arg>`. Example:
+
+```
+(λf.(f λf.f) λs.(s s)) =>
+(λs.(s s) λf.f) =>
+(λf.f λf.f) =>
+λf.f
+```
+
